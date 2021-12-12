@@ -1,0 +1,14 @@
+[package]
+name = "shortener_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.2.8" }
+sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }
+tokio = { version = "1.12.0", features = ["full"] }
+serde = { version = "1.0.130", features = ["derive"] }
+tower = { version = "0.4.10", features = ["util", "timeout"] }
+tower-http = { version = "0.1.1", features = ["add-extension", "trace"] }
+uuid = { version = "0.8.2", features = ["serde", "v4"] }
+anyhow = "1.0.44"
