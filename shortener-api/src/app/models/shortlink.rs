@@ -29,6 +29,7 @@ pub async fn delete_shortlink(pool: &Pool<Postgres>, id: i32) -> Result<PgQueryR
         .execute(pool).await
 }
 
+#[allow(dead_code)]
 pub async fn get_shortlink(pool: &Pool<Postgres>, id: i32) -> Result<ShortLink, Error> {
     sqlx::query_as::<_, ShortLink>(
         r#"

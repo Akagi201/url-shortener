@@ -2,10 +2,15 @@ use axum::{Json, extract};
 use crate::app::models::dto;
 use axum::extract::Extension;
 use axum::response::IntoResponse;
-use axum::http::{StatusCode, HeaderMap};
+use axum::http::{StatusCode, HeaderMap, Request};
 use crate::app::models::shortlink;
 use sqlx::{Pool, Postgres};
 use axum::http::header::LOCATION;
+use axum::body::Body;
+use redis::{AsyncCommands, RedisResult};
+use redis::aio::Connection;
+use std::sync::Arc;
+use tokio::sync::{Mutex};
 
 pub async fn create_shortlink(
     Json(req): Json<dto::CreateShortLinkReq>,
@@ -47,17 +52,30 @@ pub async fn delete_shortlink(
 
 pub async fn get_shortlink(
     extract::Path(id): extract::Path<i32>,
-    Extension(pool): Extension<Pool<Postgres>>
+    req: Request<Body>,
 ) -> impl IntoResponse {
-    let mut url = "/api/not_found";
-    match shortlink::get_shortlink(&pool, id).await {
-        Ok(record) => {
-            url = Box::leak(record.url.into_boxed_str());
+    let mut url = String::from("/api/not_found");
+    let mut con = req.extensions().get::<Arc<Mutex<Connection>>>().unwrap().lock().await;
+    let mut redis_key = String::from("url_");
+    redis_key.push_str(&*id.to_string());
+    let res: RedisResult<String> = con.get(redis_key).await;
+    match res {
+        Ok(v) => {
+            url = v;
         }
         Err(err) => {
             println!("err = {:#?}", err);
         }
     }
+
+    // match shortlink::get_shortlink(&pool, id).await {
+    //     Ok(record) => {
+    //         url = Box::leak(record.url.into_boxed_str());
+    //     }
+    //     Err(err) => {
+    //         println!("err = {:#?}", err);
+    //     }
+    // }
 
     let mut headers = HeaderMap::new();
     headers.insert(LOCATION, url.parse().unwrap());

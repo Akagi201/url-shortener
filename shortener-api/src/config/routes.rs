@@ -1,15 +1,19 @@
 use axum::handler::{post, get};
 use axum::{Router, AddExtensionLayer};
 use axum::routing::BoxRoute;
+use redis::aio::Connection;
 
 use crate::app::controllers::shortlink_controller;
 use sqlx::{Pool, Postgres};
+use std::sync::Arc;
+use tokio::sync::{Mutex};
 
-pub fn app(pool: Pool<Postgres>) -> Router<BoxRoute> {
+pub fn app(pool: Pool<Postgres>, redis_client: Connection) -> Router<BoxRoute> {
     Router::new()
         .route("/", get(|| async { "welcome to use axum!" }))
         .nest("/api", short_links())
         .layer(AddExtensionLayer::new(pool))
+        .layer(AddExtensionLayer::new(Arc::new(Mutex::new(redis_client))))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .boxed()
 }
